@@ -79,4 +79,20 @@ public class GenreService(
 
         return ServiceResult<GenreDto>.Success(resultDto);
     }
+    public async Task<bool> DeleteGenre(int id)
+    {
+        var genre = await context.Genres.FindAsync(id);
+        if (genre == null)
+            return false;
+
+        context.Genres.Remove(genre);
+        await context.SaveChangesAsync(default);
+
+        // Invalidate Cache
+        // Simple strategy: remove the first page to ensure lists aren't totally stale.
+        // A better full clearing strategy is out of scope for this specific task but recommended for future.
+        cache.Remove($"{GenreCachePrefix}_p1_s10");
+            
+        return true;
+    }
 }

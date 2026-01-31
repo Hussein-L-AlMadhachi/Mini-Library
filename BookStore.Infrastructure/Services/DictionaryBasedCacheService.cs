@@ -54,4 +54,16 @@ public class DictionaryBasedCacheService : ICacheService
             _cache.Remove(key);
         }
     }
+
+    public void RemoveByPrefix(string prefixPattern)
+    {
+        lock (_lock)
+        {
+            var keysToRemove = _cache.Keys.Where(k => k.StartsWith(prefixPattern)).ToList();
+            foreach (var key in keysToRemove)
+            {
+                _cache.Remove(key);
+            }
+        }
+    }
 }

@@ -11,46 +11,48 @@ namespace BookStore.Api.Controllers;
 
 public class BooksController(IBookService bookService, ICacheService cacheService) : BaseController
 {
-    private const string BooksCacheKey = "books_all";
+    private const string BooksCacheKeyPrefix = "books_";
     private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(30);
 
     [HttpGet]
-    public ActionResult<ApiResponse<List<BookDto>>> GetBooks()
+    public async Task<ActionResult<ApiResponse<PaginatedList<BookDto>>>> GetBooks([FromQuery] PaginatedRequest request)
     {
+        var cacheKey = $"{BooksCacheKeyPrefix}{request.PageNumber}_{request.PageSize}";
+        
         // Try to get from cache first
-        var cachedBooks = cacheService.Get<List<BookDto>>(BooksCacheKey);
+        var cachedBooks = cacheService.Get<PaginatedList<BookDto>>(cacheKey);
         if (cachedBooks != null)
         {
-            return Ok(new ApiResponse<List<BookDto>>(cachedBooks, "Retrieved from cache"));
+            return Ok(new ApiResponse<PaginatedList<BookDto>>(cachedBooks, "Retrieved from cache"));
         }
 
-        var result = bookService.GetBooks();
+        var result = await bookService.GetBooks(request);
         
         // Cache the result
-        cacheService.Set(BooksCacheKey, result, CacheDuration);
+        cacheService.Set(cacheKey, result, CacheDuration);
         
-        return Ok(new ApiResponse<List<BookDto>>(result));
+        return Ok(new ApiResponse<PaginatedList<BookDto>>(result));
     }
 
     [HttpGet("{id:int}")]
-    public ActionResult<ApiResponse<Book?>> GetBookById(int id)
+    public ActionResult<ApiResponse<BookDto?>> GetBookById(int id)
     {
         var result = bookService.GetById(id);
         if (result is null)
-            return NotFound(new ApiResponse<Book?>(new List<string> { "Book was not found" }));
-        return Ok(new ApiResponse<Book?>(result));
+            return NotFound(new ApiResponse<BookDto?>(new List<string> { "Book was not found" }));
+        return Ok(new ApiResponse<BookDto?>(result));
     }
 
     [HttpPost]
     [Authorize(Roles = "Admin")]
-    public ActionResult<ApiResponse<Book>> CreateBook([FromBody] BookRequest request)
+    public ActionResult<ApiResponse<BookDto>> CreateBook([FromBody] BookRequest request)
     {
         var result = bookService.CreateBook(request);
         
-        // Invalidate cache when a new book is added
-        cacheService.Remove(BooksCacheKey);
+        // Invalidate all book caches
+        cacheService.RemoveByPrefix(BooksCacheKeyPrefix);
         
-        return Ok(new ApiResponse<Book>(result, "Book created successfully"));
+        return Ok(new ApiResponse<BookDto>(result, "Book created successfully"));
     }
 
     [HttpPut]
@@ -60,8 +62,8 @@ public class BooksController(IBookService bookService, ICacheService cacheServic
         var result = await bookService.UpdateBook(request);
         if (result)
         {
-            // Invalidate cache when a book is updated
-            cacheService.Remove(BooksCacheKey);
+            // Invalidate all book caches
+            cacheService.RemoveByPrefix(BooksCacheKeyPrefix);
             return Ok(new ApiResponse<bool>(true, "Book updated successfully"));
         }
         return BadRequest(new ApiResponse<bool>(new List<string> { "Book was not found or data provided is invalid" }));
@@ -75,8 +77,8 @@ public class BooksController(IBookService bookService, ICacheService cacheServic
         if (!result)
             return NotFound(new ApiResponse<bool>(new List<string> { "Book not found" }));
         
-        // Invalidate cache when a book is deleted
-        cacheService.Remove(BooksCacheKey);
+        // Invalidate all book caches
+        cacheService.RemoveByPrefix(BooksCacheKeyPrefix);
         
         return Ok(new ApiResponse<bool>(true, "Book deleted successfully"));
     }

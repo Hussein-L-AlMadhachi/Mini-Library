@@ -1,4 +1,5 @@
 using BookStore.Application.DTOs;
+using BookStore.Application.Common;
 using BookStore.Application.Interfaces;
 using BookStore.Domain.Entities;
 
@@ -11,7 +12,7 @@ public class InMemoryBookService : IBookService
         new Book() { Id = 1, Title = "Abc" }
     };
 
-    public Book CreateBook(BookRequest request)
+    public BookDto CreateBook(BookRequest request)
     {
         var newId = Books.Max(b => b.Id) + 1;
         var newBook = new Book()
@@ -20,15 +21,17 @@ public class InMemoryBookService : IBookService
             Title = request.Title.Trim(),
         };
         Books.Add(newBook);
-        return newBook;
+        return new BookDto { Id = newBook.Id, Title = newBook.Title, Author = new AuthorDto { Id = 0, Name = "Unknown" } };
     }
 
-    public Book? GetById(int id)
+    public BookDto? GetById(int id)
     {
-        return Books.FirstOrDefault(b => b.Id == id);
+        var book = Books.FirstOrDefault(b => b.Id == id);
+        if (book == null) return null;
+        return new BookDto { Id = book.Id, Title = book.Title, Author = new AuthorDto { Id = 0, Name = "Unknown" } };
     }
 
-    public List<BookDto> GetBooks() => throw new NotImplementedException();
+    public Task<PaginatedList<BookDto>> GetBooks(PaginatedRequest request) => throw new NotImplementedException();
     public Task<bool> UpdateBook(UpdateBookRequest book)
     {
         throw new NotImplementedException();

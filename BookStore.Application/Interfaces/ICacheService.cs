@@ -9,4 +9,5 @@ public interface ICacheService
     void Set<T>(string key, T value, TimeSpan expiration);
     
     void Remove(string key);
+    void RemoveByPrefix(string prefixPattern);
 }

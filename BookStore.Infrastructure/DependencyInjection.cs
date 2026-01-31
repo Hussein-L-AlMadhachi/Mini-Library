@@ -17,7 +17,9 @@ public static class DependencyInjection
         // Specific Rule: Map Author.Name -> BookDto.AuthorName
         TypeAdapterConfig<Book, BookDto>
             .NewConfig()
-            .Map(dest => dest.Author.Name, src => src.Author.Name);
+            .Map(dest => dest.Author.Name, src => src.Author.Name)
+            .Map(dest => dest.Genres, src => src.Genres.Select(bg => bg.Genre))
+            .Map(dest => dest.Borrower, src => src.Loans.Where(l => l.ReturnDate == null).Select(l => l.User.Name).FirstOrDefault());
         
         
 

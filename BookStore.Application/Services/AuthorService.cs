@@ -31,9 +31,20 @@ public class AuthorService(IBookStoreDbContext dbContext) : IAuthorService
             //     Id = author.Id
             // })
             .ProjectToType<AuthorDto>();
-        var test = query.Single();
+
         var result = PaginatedList<AuthorDto>.CreateAsync(query, request.PageNumber, request.PageSize);
         return result;
         
+    }
+
+    public async Task<bool> DeleteAuthor(int id)
+    {
+        var author = await dbContext.Authors.FindAsync(id);
+        if (author == null)
+            return false;
+
+        dbContext.Authors.Remove(author);
+        await dbContext.SaveChangesAsync(default);
+        return true;
     }
 }

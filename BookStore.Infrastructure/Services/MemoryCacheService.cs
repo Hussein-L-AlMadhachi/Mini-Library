@@ -30,4 +30,11 @@ public class MemoryCacheService(IMemoryCache memoryCache) : ICacheService
     {
         memoryCache.Remove(key);
     }
+
+    public void RemoveByPrefix(string prefixPattern)
+    {
+        // IMemoryCache doesn't natively support iteration/removal by prefix efficiently.
+        // Since we are moving to DictionaryBasedCacheService, we can just throw or ignore.
+        throw new NotSupportedException("RemoveByPrefix is not supported in MemoryCacheService");
+    }
 }

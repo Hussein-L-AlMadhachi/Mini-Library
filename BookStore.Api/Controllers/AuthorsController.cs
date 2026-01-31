@@ -26,4 +26,13 @@ public class AuthorsController(IAuthorService authorService) : BaseController
     {
         return Ok(await authorService.GetAuthors(request));
     }
+    
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var result = await authorService.DeleteAuthor(id);
+        if (!result) return NotFound();
+        return NoContent();
+    }
 }

@@ -14,7 +14,7 @@ public class Book : BaseEntity, IAuditable, ISoftDeletable
     
     public DateTime? PublishYear { get; set; }
     
-    public ICollection<BookGenre> Genres { get; set; }
+    public ICollection<BookGenre> Genres { get; set; } = new List<BookGenre>();
     
     // Navigation property for loans
     public ICollection<Loan> Loans { get; set; } = new List<Loan>();

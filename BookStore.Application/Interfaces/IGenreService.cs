@@ -7,4 +7,5 @@ public interface IGenreService
 {
     Task<ServiceResult<PaginatedList<GenreDto>>> GetGenres(PaginatedRequest request);
     Task<ServiceResult<GenreDto>> CreateGenre(GenreDto request);
+    Task<bool> DeleteGenre(int id);
 }

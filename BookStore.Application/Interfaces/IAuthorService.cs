@@ -8,4 +8,5 @@ public interface IAuthorService
 {
     Author CreateAuthor(AuthorRequest request);
     Task<PaginatedList<AuthorDto>> GetAuthors(PaginatedRequest request);
+    Task<bool> DeleteAuthor(int id);
 }

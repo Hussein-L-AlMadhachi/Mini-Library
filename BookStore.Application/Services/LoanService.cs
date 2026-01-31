@@ -68,6 +68,8 @@ public class LoanService(IBookStoreDbContext dbContext) : ILoanService
             return false; // Already returned
         
         loan.ReturnDate = DateTime.UtcNow;
+        loan.UpdatedAt = DateTime.UtcNow;
+        dbContext.Loans.Update(loan);
         await dbContext.SaveChangesAsync(CancellationToken.None);
         
         return true;

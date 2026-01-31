@@ -1,4 +1,5 @@
 using BookStore.Application.DTOs;
+using BookStore.Application.Common;
 using BookStore.Application.Interfaces;
 using BookStore.Domain.Entities;
 using Mapster;
@@ -8,32 +9,57 @@ namespace BookStore.Application.Services;
 
 public class BookService(IBookStoreDbContext dbContext) : IBookService
 {
-    public Book CreateBook(BookRequest request)
+    public BookDto CreateBook(BookRequest request)
     {
         var newBook = new Book()
         {
             Title = request.Title,
             AuthorId = request.AuthorId.Value
         };
+        
+        if (request.GenreIds.Count != 0)
+        {
+            var genres = dbContext.Genres.Where(g => request.GenreIds.Contains(g.Id)).ToList();
+            if (genres.Count != request.GenreIds.Count)
+                throw new Exception("One or more genres not found");
+                
+            foreach (var genre in genres)
+            {
+                newBook.Genres.Add(new BookGenre
+                {
+                    Book = newBook,
+                    GenreId = genre.Id
+                });
+            }
+        }
+        
         dbContext.Books.Add(newBook);
         dbContext.SaveChanges();
-        return newBook;
-    }
-    
-    public List<BookDto> GetBooks()
-    {
-        var books = dbContext.Books
+
+        // Fetch the complete book with relationships to map to DTO
+        var createdBook = dbContext.Books
             .AsNoTracking()
             .Include(b => b.Author)
-            // .Select(b => new BookDto()
-            // {
-            //     Id = b.Id,
-            //     Title = b.Title,
-            //     Author = new AuthorDto(){Name = b.Author.Name, Id = b.Author.Id }
-            // })
+            .Include(b => b.Genres)
+                .ThenInclude(bg => bg.Genre)
             .ProjectToType<BookDto>()
-            .ToList();
-        return books;
+            .First(b => b.Id == newBook.Id);
+
+        return createdBook;
+    }
+    
+    public async Task<PaginatedList<BookDto>> GetBooks(PaginatedRequest request)
+    {
+        var query = dbContext.Books
+            .AsNoTracking()
+            .Include(b => b.Author)
+            .Include(b => b.Genres)
+                .ThenInclude(bg => bg.Genre)
+            .Include(b => b.Loans)
+                .ThenInclude(l => l.User)
+            .ProjectToType<BookDto>();
+
+        return await PaginatedList<BookDto>.CreateAsync(query, request.PageNumber, request.PageSize);
     }
 
     public async Task<bool> UpdateBook(UpdateBookRequest request)
@@ -50,13 +76,44 @@ public class BookService(IBookStoreDbContext dbContext) : IBookService
                 return false;
             bookToUpdate.AuthorId = request.AuthorId.Value;
         }
+
+        if (request.GenreIds != null)
+        {
+             var genres = dbContext.Genres.Where(g => request.GenreIds.Contains(g.Id)).ToList();
+             if (genres.Count != request.GenreIds.Count)
+                 throw new Exception("One or more genres not found");
+             
+             // Remove existing genres
+             var existingGenres = dbContext.BookGenres.Where(bg => bg.BookId == bookToUpdate.Id).ToList();
+             dbContext.BookGenres.RemoveRange(existingGenres);
+             
+             // Add new genres
+             foreach (var genre in genres)
+             {
+                 dbContext.BookGenres.Add(new BookGenre
+                 {
+                     BookId = bookToUpdate.Id,
+                     GenreId = genre.Id
+                 });
+             }
+        }
+
         await dbContext.SaveChangesAsync(CancellationToken.None);
         return true;
     }
 
-    public Book? GetById(int id)
+    public BookDto? GetById(int id)
     {
-        throw new NotImplementedException();
+        var book = dbContext.Books
+            .AsNoTracking()
+            .Include(b => b.Author)
+            .Include(b => b.Genres)
+            .Include(b => b.Loans)
+                .ThenInclude(l => l.User)
+            .ProjectToType<BookDto>()
+            .FirstOrDefault(b => b.Id == id);
+            
+        return book;
     }
 
 

@@ -11,7 +11,8 @@ public class BookGenresConfiguration : IEntityTypeConfiguration<BookGenre>
         builder.HasKey(bg => new { bg.BookId, bg.GenreId });
         builder.HasOne(bg => bg.Book)
             .WithMany(b => b.Genres)
-            .HasForeignKey(bg => bg.BookId);
+            .HasForeignKey(bg => bg.BookId)
+            .IsRequired(false);
         
         builder.HasOne(bg => bg.Genre)
             .WithMany(b => b.Books)

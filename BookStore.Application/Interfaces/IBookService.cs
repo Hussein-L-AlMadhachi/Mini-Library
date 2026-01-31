@@ -1,13 +1,13 @@
 using BookStore.Application.DTOs;
-using BookStore.Domain.Entities;
+using BookStore.Application.Common;
 
 namespace BookStore.Application.Interfaces;
 
 public interface IBookService
 {
-    Book CreateBook(BookRequest request);
-    Book? GetById(int id);
-    List<BookDto> GetBooks();
+    BookDto CreateBook(BookRequest request);
+    BookDto? GetById(int id);
+    Task<PaginatedList<BookDto>> GetBooks(PaginatedRequest request);
     Task<bool> UpdateBook(UpdateBookRequest book);
     Task<bool> DeleteBook(int id);
 }
